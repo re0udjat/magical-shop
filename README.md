@@ -1,1 +1,1 @@
-# magical-shop
+# Magical Shop
