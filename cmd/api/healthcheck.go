@@ -7,9 +7,12 @@ import (
 )
 
 func (app *app) healthcheckHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
+
+	data := map[string]string{
 		"status":  "available",
 		"env":     app.config.env,
 		"version": version,
-	})
+	}
+
+	app.writeJSON(c, http.StatusOK, data)
 }
