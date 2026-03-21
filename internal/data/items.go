@@ -6,6 +6,6 @@ type Item struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
 	Rarity    string    `json:"rarity"`
-	Price     int64     `json:"price"`
+	Price     Currency  `json:"price"`
 	CreatedAt time.Time `json:"-"`
 }

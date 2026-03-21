@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type envelope map[string]any
+
 func (app *app) readIDParam(c *gin.Context) (int64, error) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id < 1 {
@@ -16,7 +18,7 @@ func (app *app) readIDParam(c *gin.Context) (int64, error) {
 	return id, nil
 }
 
-func (app *app) writeJSON(c *gin.Context, status int, data any) {
+func (app *app) writeJSON(c *gin.Context, status int, data envelope) {
 	if app.config.env == "dev" {
 		c.IndentedJSON(status, data)
 	} else {

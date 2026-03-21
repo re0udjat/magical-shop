@@ -17,7 +17,7 @@ func (app *app) createItemHandler(c *gin.Context) {
 func (app *app) getItemHandler(c *gin.Context) {
 	id, err := app.readIDParam(c)
 	if err != nil {
-		app.writeJSON(c, http.StatusBadRequest, gin.H{
+		app.writeJSON(c, http.StatusBadRequest, envelope{
 			"error": err.Error(),
 		})
 		return
@@ -30,5 +30,5 @@ func (app *app) getItemHandler(c *gin.Context) {
 		CreatedAt: time.Now(),
 	}
 
-	app.writeJSON(c, http.StatusOK, item)
+	app.writeJSON(c, http.StatusOK, envelope{"item": item})
 }
