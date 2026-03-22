@@ -33,6 +33,11 @@ func (app *app) serverErrorResponse(c *gin.Context, err error) {
 	app.errorResponse(c, http.StatusInternalServerError, msg)
 }
 
+// Send a 400 Bad Request status code and JSON response to client
+func (app *app) badResquestResponse(c *gin.Context, err error) {
+	app.errorResponse(c, http.StatusBadRequest, err.Error())
+}
+
 // Send a 404 Not Found status code and JSON response to client
 func (app *app) notFoundResponse(c *gin.Context) {
 	msg := "the requested resource could not be found"
@@ -43,4 +48,9 @@ func (app *app) notFoundResponse(c *gin.Context) {
 func (app *app) methodNotAllowedResponse(c *gin.Context) {
 	msg := fmt.Sprintf("the %s method is not supported for this resource", c.Request.Method)
 	app.errorResponse(c, http.StatusMethodNotAllowed, msg)
+}
+
+// Send a 422 Unprocessable Entity status code and JSON response to client
+func (app *app) failedValidationResponse(c *gin.Context, errors map[string]string) {
+	app.errorResponse(c, http.StatusUnprocessableEntity, errors)
 }
