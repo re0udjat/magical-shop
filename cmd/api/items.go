@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -9,8 +11,20 @@ import (
 )
 
 func (app *app) createItemHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"msg": "Create a new item",
+	var input struct {
+		Name   string `json:"name"`
+		Rarity string `json:"rarity"`
+		Price  int64  `json:"price"`
+	}
+
+	err := json.NewDecoder(c.Request.Body).Decode(&input)
+	if err != nil {
+		app.errorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	app.writeJSON(c, http.StatusOK, envelope{
+		"msg": fmt.Sprintf("%+v", input),
 	})
 }
 
