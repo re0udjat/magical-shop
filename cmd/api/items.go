@@ -17,9 +17,7 @@ func (app *app) createItemHandler(c *gin.Context) {
 func (app *app) getItemHandler(c *gin.Context) {
 	id, err := app.readIDParam(c)
 	if err != nil {
-		app.writeJSON(c, http.StatusBadRequest, envelope{
-			"error": err.Error(),
-		})
+		app.errorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 

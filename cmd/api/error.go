@@ -1,0 +1,46 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+// A generic helper for logging an error msg along with the current request
+// method and URL as attributes in the log entry
+func (app *app) logError(c *gin.Context, err error) {
+	var (
+		method = c.Request.Method
+		uri    = c.Request.URL.RequestURI()
+	)
+
+	app.logger.Error(err.Error(), "method", method, "uri", uri)
+}
+
+// A generic helper for sending JSON-formatted error msg to the client with a given status code
+func (app *app) errorResponse(c *gin.Context, status int, msg any) {
+	env := envelope{"error": msg}
+	app.writeJSON(c, status, env)
+}
+
+// Used when app encounters an unexpected problem at runtime
+// Logs the detailed error msg
+// Sends a 500 Internal Server Error status code and JSON response to client
+func (app *app) serverErrorResponse(c *gin.Context, err error) {
+	app.logError(c, err)
+	msg := "the server encountered a problem and could not process your request"
+	app.errorResponse(c, http.StatusInternalServerError, msg)
+}
+
+// Send a 404 Not Found status code and JSON response to client
+func (app *app) notFoundResponse(c *gin.Context) {
+	msg := "the requested resource could not be found"
+	app.errorResponse(c, http.StatusNotFound, msg)
+}
+
+// Send a 405 Method Not Allowed status code and JSON response to client
+func (app *app) methodNotAllowedResponse(c *gin.Context) {
+	msg := fmt.Sprintf("the %s method is not supported for this resource", c.Request.Method)
+	app.errorResponse(c, http.StatusMethodNotAllowed, msg)
+}
