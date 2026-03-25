@@ -3,5 +3,5 @@ CREATE TABLE IF NOT EXISTS items (
   name text NOT NULL,
   rarity text NOT NULL,
   price integer NOT NULL,
-  created_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
+  created_at timestamp(0) with time zone NOT NULL DEFAULT NOW()
 )
