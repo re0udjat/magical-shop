@@ -1,0 +1,3 @@
+ALTER TABLE items DROP CONSTRAINT name_check;
+ALTER TABLE items DROP CONSTRAINT rarity_check;
+ALTER TABLE items DROP CONSTRAINT price_check;

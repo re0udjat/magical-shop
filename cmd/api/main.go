@@ -90,8 +90,13 @@ func openDB(cfg config) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 
+	// Max number of opens connections in the pool (in-use + idle connections)
 	dbpool.Config().MaxConns = int32(cfg.db.maxConns)
+
+	// Min number of idle connections in the pool
 	dbpool.Config().MinIdleConns = int32(cfg.db.minIdleConns)
+
+	// Max connection idle time
 	dbpool.Config().MaxConnIdleTime = cfg.db.maxIdleTime
 
 	// Create a context with a timeout of 5 seconds
