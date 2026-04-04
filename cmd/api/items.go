@@ -50,6 +50,45 @@ func (app *app) createItemHandler(c *gin.Context) {
 	app.writeJSON(c, http.StatusCreated, envelope{"item": item})
 }
 
+func (app *app) listItemsHandler(c *gin.Context) {
+	var input struct {
+		Name   string
+		Rarity string
+		data.Filters
+	}
+
+	v := validator.New()
+
+	qs := c.Request.URL.Query()
+
+	// Extract data from query string, falling back to  defaults of an empty string and
+	// an empty slice respectively if they are not provided by the client
+	input.Name = app.readString(qs, "name", "")
+	input.Rarity = app.readString(qs, "rarity", "")
+
+	// Get the page and page_size query string values as integers
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+
+	// Extract the sort query string value, falling back to "id" if it's not provided by
+	// the client
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafelist = []string{"id", "name", "rarity", "-id", "-name", "-rarity"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(c, v.Errors)
+		return
+	}
+
+	items, err := app.models.Items.GetAll(input.Name, input.Rarity, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(c, err)
+		return
+	}
+
+	app.writeJSON(c, http.StatusOK, envelope{"items": items})
+}
+
 func (app *app) showItemHandler(c *gin.Context) {
 	id, err := app.readIDParam(c)
 	if err != nil {

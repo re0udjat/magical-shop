@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/re0udjat/magic-shop/internal/validator"
 )
 
 type envelope map[string]any
@@ -83,4 +85,48 @@ func (app *app) readJSON(c *gin.Context, dst any) error {
 	}
 
 	return nil
+}
+
+// Returns a string value from the query string, or the provided default value if
+// no matching key could be found
+func (app *app) readString(qs url.Values, key string, defaultValue string) string {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	return s
+}
+
+// Reads a string value from the query string and the splits it into a slice on the
+// comma character. If no matching key could be found, it returns the provided default
+// value
+func (app *app) readCSV(qs url.Values, key string, defaultValue []string) []string {
+	csv := qs.Get(key)
+
+	if csv == "" {
+		return defaultValue
+	}
+
+	return strings.Split(csv, ",")
+}
+
+// Reads a string value from the query string and converts it to an integer before
+// returning it. If no matching key could be found, or the value is not a valid
+// integer, it returns the provided default value
+func (app *app) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "must be a valid integer")
+		return defaultValue
+	}
+
+	return i
 }

@@ -50,6 +50,51 @@ func (m ItemModel) Insert(item *Item) error {
 	return m.DB.QueryRow(ctx, query, args...).Scan(&item.ID, &item.CreatedAt)
 }
 
+func (m ItemModel) GetAll(name string, rarity string, filters Filters) ([]*Item, error) {
+	query := `
+		SELECT id, name, rarity, price, created_at, version
+		FROM items
+		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
+		AND (LOWER(rarity) = LOWER($2) OR $2 = '')
+		ORDER BY id`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := m.DB.Query(ctx, query, name, rarity)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	items := []*Item{}
+
+	for rows.Next() {
+		var item Item
+
+		err := rows.Scan(
+			&item.ID,
+			&item.Name,
+			&item.Rarity,
+			&item.Price,
+			&item.CreatedAt,
+			&item.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, &item)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
 func (m ItemModel) Get(id int64) (*Item, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound

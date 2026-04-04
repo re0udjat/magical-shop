@@ -28,6 +28,7 @@ func (app *app) routes() http.Handler {
 
 	// API for items
 	router.POST("/v1/items", app.createItemHandler)
+	router.GET("/v1/items", app.listItemsHandler)
 	router.GET("/v1/items/:id", app.showItemHandler)
 	router.PATCH("/v1/items/:id", app.updateItemHandler)
 	router.DELETE("/v1/items/:id", app.deleteItemHandler)
