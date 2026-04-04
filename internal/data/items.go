@@ -16,6 +16,7 @@ type Item struct {
 	Rarity    string    `json:"rarity"`
 	Price     Currency  `json:"price"`
 	CreatedAt time.Time `json:"-"`
+	Version   int       `json:"-"`
 }
 
 func ValidateItem(v *validator.Validator, item *Item) {
@@ -55,7 +56,7 @@ func (m ItemModel) Get(id int64) (*Item, error) {
 	}
 
 	query := `
-		SELECT id, name, rarity, price, created_at
+		SELECT id, name, rarity, price, created_at, version
 		FROM items
 		WHERE id = $1`
 
@@ -64,7 +65,7 @@ func (m ItemModel) Get(id int64) (*Item, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := m.DB.QueryRow(ctx, query, id).Scan(&item.ID, &item.Name, &item.Rarity, &item.Price, &item.CreatedAt)
+	err := m.DB.QueryRow(ctx, query, id).Scan(&item.ID, &item.Name, &item.Rarity, &item.Price, &item.CreatedAt, &item.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, pgx.ErrNoRows):
@@ -80,16 +81,25 @@ func (m ItemModel) Get(id int64) (*Item, error) {
 func (m ItemModel) Update(item *Item) error {
 	query := `
 		UPDATE items
-		SET name = $1, rarity = $2, price = $3
-		WHERE id = $4
-		RETURNING id, created_at`
+		SET name = $1, rarity = $2, price = $3, version = version + 1
+		WHERE id = $4 AND version = $5
+		RETURNING version`
 
-	args := []any{item.Name, item.Rarity, item.Price, item.ID}
+	args := []any{item.Name, item.Rarity, item.Price, item.ID, item.Version}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	return m.DB.QueryRow(ctx, query, args...).Scan(&item.ID, &item.CreatedAt)
+	err := m.DB.QueryRow(ctx, query, args...).Scan(&item.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+	return nil
 }
 
 func (m ItemModel) Delete(id int64) error {

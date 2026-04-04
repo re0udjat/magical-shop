@@ -50,6 +50,12 @@ func (app *app) methodNotAllowedResponse(c *gin.Context) {
 	app.errorResponse(c, http.StatusMethodNotAllowed, msg)
 }
 
+// Send a 409 Conflict status code and JSON response to client
+func (app *app) editConflictResponse(c *gin.Context) {
+	msg := "unable to update the record due to an edit conflict, please try again"
+	app.errorResponse(c, http.StatusConflict, msg)
+}
+
 // Send a 422 Unprocessable Entity status code and JSON response to client
 func (app *app) failedValidationResponse(c *gin.Context, errors map[string]string) {
 	app.errorResponse(c, http.StatusUnprocessableEntity, errors)

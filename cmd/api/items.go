@@ -125,7 +125,12 @@ func (app *app) updateItemHandler(c *gin.Context) {
 	// Save the updated item
 	err = app.models.Items.Update(item)
 	if err != nil {
-		app.serverErrorResponse(c, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(c)
+		default:
+			app.serverErrorResponse(c, err)
+		}
 		return
 	}
 
