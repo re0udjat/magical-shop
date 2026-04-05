@@ -34,5 +34,8 @@ func (app *app) routes() http.Handler {
 	router.PATCH("/v1/items/:id", app.updateItemHandler)
 	router.DELETE("/v1/items/:id", app.deleteItemHandler)
 
+	// API for users
+	router.POST("/v1/users", app.registerUserHandler)
+
 	return router
 }

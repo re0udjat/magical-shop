@@ -14,11 +14,13 @@ var (
 // All models will be wrapped inside the Models struct
 type Models struct {
 	Items ItemModel
+	Users UserModel
 }
 
 // Returns a Model struct containing the initialized ItemModel
 func NewModels(db *pgxpool.Pool) Models {
 	return Models{
 		Items: ItemModel{DB: db},
+		Users: UserModel{DB: db},
 	}
 }
