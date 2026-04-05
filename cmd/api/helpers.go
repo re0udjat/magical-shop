@@ -130,3 +130,22 @@ func (app *app) readInt(qs url.Values, key string, defaultValue int, v *validato
 
 	return i
 }
+
+func (app *app) background(fn func()) {
+	// Increment the WaitGroup counter
+	app.wg.Add(1)
+
+	// Launch the goroutine
+	go func() {
+		// Decrement the WaitGroup counter when the goroutine finishes
+		defer app.wg.Done()
+
+		// Recover any panic
+		defer func() {
+			if err := recover(); err != nil {
+				app.logger.Error(fmt.Sprintf("%v", err))
+			}
+		}()
+		fn()
+	}()
+}

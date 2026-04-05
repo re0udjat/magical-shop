@@ -5,10 +5,12 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/re0udjat/magic-shop/internal/data"
+	"github.com/re0udjat/magic-shop/internal/mailer"
 )
 
 const version = "1.0.0"
@@ -27,12 +29,21 @@ type config struct {
 		burst   int
 		enabled bool
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 type app struct {
 	config config
 	logger *slog.Logger
 	models data.Models
+	mailer mailer.Mailer
+	wg     sync.WaitGroup
 }
 
 func main() {
@@ -41,13 +52,22 @@ func main() {
 	// Flags for app
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "dev", "Envrionment (dev|stag|prod)")
+
 	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://postgres:postgres@localhost:5432/magical_shop?sslmode=disable", "PostgreSQL DSN")
+
 	flag.IntVar(&cfg.db.maxConns, "db-max-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.minIdleConns, "db-min-idle-conns", 5, "PostgreSQL min idle connections")
 	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "PostgreSQL max connection idle time")
+
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter max burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 2525, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "", "SMTP password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Magical Shop <no-reply@magical-shop.cuongnlt.com>", "SMTP sender")
 
 	flag.Parse()
 
@@ -70,6 +90,7 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(dbpool),
+		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
 	/* Declare a server:

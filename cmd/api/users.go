@@ -56,5 +56,13 @@ func (app *app) registerUserHandler(c *gin.Context) {
 		return
 	}
 
+	// Send the activation email in a background goroutine
+	app.background(func() {
+		err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
+		if err != nil {
+			app.logger.Error(err.Error())
+		}
+	})
+
 	app.writeJSON(c, http.StatusCreated, envelope{"user": user})
 }
