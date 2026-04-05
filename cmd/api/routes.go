@@ -14,6 +14,7 @@ func (app *app) routes() http.Handler {
 	// Add middleware
 	router.Use(gin.Logger())
 	router.Use(app.recover())
+	router.Use(app.rateLimit())
 
 	// Customize error response for router
 	router.NoRoute(func(c *gin.Context) {

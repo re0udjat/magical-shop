@@ -3,8 +3,8 @@ tmp_dir = "tmp"
 
 [build]
   cmd = "go build -o ./tmp/api ./cmd/api"
-  bin = "tmp/api"
-  full_bin = "./tmp/api"
+  bin = "tmp/api -limiter-enabled=false"
+  full_bin = "./tmp/api -limiter-enabled=false"
   include_ext = ["go", "tpl", "tmpl", "html", "toml"]
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules"]
   include_dir = []

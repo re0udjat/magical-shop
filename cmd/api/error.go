@@ -60,3 +60,9 @@ func (app *app) editConflictResponse(c *gin.Context) {
 func (app *app) failedValidationResponse(c *gin.Context, errors map[string]string) {
 	app.errorResponse(c, http.StatusUnprocessableEntity, errors)
 }
+
+// Send a 429 Too Many Requests status code and JSON response to client
+func (app *app) rateLimitExceededResponse(c *gin.Context) {
+	msg := "rate limit exceeded"
+	app.errorResponse(c, http.StatusTooManyRequests, msg)
+}

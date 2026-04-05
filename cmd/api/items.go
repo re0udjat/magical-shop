@@ -73,20 +73,20 @@ func (app *app) listItemsHandler(c *gin.Context) {
 	// Extract the sort query string value, falling back to "id" if it's not provided by
 	// the client
 	input.Filters.Sort = app.readString(qs, "sort", "id")
-	input.Filters.SortSafelist = []string{"id", "name", "rarity", "-id", "-name", "-rarity"}
+	input.Filters.SortSafelist = []string{"id", "name", "rarity", "price", "-id", "-name", "-rarity", "-price"}
 
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(c, v.Errors)
 		return
 	}
 
-	items, err := app.models.Items.GetAll(input.Name, input.Rarity, input.Filters)
+	items, metadata, err := app.models.Items.GetAll(input.Name, input.Rarity, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(c, err)
 		return
 	}
 
-	app.writeJSON(c, http.StatusOK, envelope{"items": items})
+	app.writeJSON(c, http.StatusOK, envelope{"items": items, "metadata": metadata})
 }
 
 func (app *app) showItemHandler(c *gin.Context) {

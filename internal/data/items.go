@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -50,30 +51,33 @@ func (m ItemModel) Insert(item *Item) error {
 	return m.DB.QueryRow(ctx, query, args...).Scan(&item.ID, &item.CreatedAt)
 }
 
-func (m ItemModel) GetAll(name string, rarity string, filters Filters) ([]*Item, error) {
-	query := `
-		SELECT id, name, rarity, price, created_at, version
+func (m ItemModel) GetAll(name string, rarity string, filters Filters) ([]*Item, Metadata, error) {
+	query := fmt.Sprintf(`
+		SELECT count(*) OVER(), id, name, rarity, price, created_at, version
 		FROM items
 		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
 		AND (LOWER(rarity) = LOWER($2) OR $2 = '')
-		ORDER BY id`
+		ORDER BY %s %s, id ASC
+		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := m.DB.Query(ctx, query, name, rarity)
+	rows, err := m.DB.Query(ctx, query, name, rarity, filters.limit(), filters.offset())
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
 	defer rows.Close()
 
+	totalRecords := 0
 	items := []*Item{}
 
 	for rows.Next() {
 		var item Item
 
 		err := rows.Scan(
+			&totalRecords,
 			&item.ID,
 			&item.Name,
 			&item.Rarity,
@@ -82,17 +86,18 @@ func (m ItemModel) GetAll(name string, rarity string, filters Filters) ([]*Item,
 			&item.Version,
 		)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 
 		items = append(items, &item)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	return items, nil
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+	return items, metadata, nil
 }
 
 func (m ItemModel) Get(id int64) (*Item, error) {
