@@ -158,3 +158,35 @@ func (app *app) authenticate() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func (app *app) requireAuthenticatedUser(next gin.HandlerFunc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user := app.contextGetUser(c.Request)
+
+		if user.IsAnonymous() {
+			app.authenticationRequiredResponse(c)
+			c.Abort()
+			return
+		}
+
+		next(c)
+	}
+}
+
+func (app *app) requireActivatedUser() gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		// Get the user from the request context
+		user := app.contextGetUser(c.Request)
+
+		// If the user is not activated, the client need to activate their account
+		if !user.Activated {
+			app.inactiveAccountResponse(c)
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+
+	return app.requireAuthenticatedUser(fn)
+}

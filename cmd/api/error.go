@@ -78,3 +78,14 @@ func (app *app) invalidAuthenticationTokenResponse(c *gin.Context) {
 	msg := "invalid or missing authentication token"
 	app.errorResponse(c, http.StatusUnauthorized, msg)
 }
+
+func (app *app) authenticationRequiredResponse(c *gin.Context) {
+	msg := "you must be authenticated to access this resource"
+	app.errorResponse(c, http.StatusUnauthorized, msg)
+}
+
+// Send a 403 Forbidden status code and JSON response to client
+func (app *app) inactiveAccountResponse(c *gin.Context) {
+	msg := "your user account must be activated to access this resource"
+	app.errorResponse(c, http.StatusForbidden, msg)
+}

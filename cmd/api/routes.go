@@ -12,10 +12,10 @@ func (app *app) routes() http.Handler {
 	router.HandleMethodNotAllowed = true
 
 	// Add middleware
-	router.Use(gin.Logger())
-	router.Use(app.recover())
-	router.Use(app.rateLimit())
-	router.Use(app.authenticate())
+	router.Use(gin.Logger()).
+		Use(app.recover()).
+		Use(app.rateLimit()).
+		Use(app.authenticate())
 
 	// Customize error response for router
 	router.NoRoute(func(c *gin.Context) {
@@ -25,15 +25,20 @@ func (app *app) routes() http.Handler {
 		app.methodNotAllowedResponse(c)
 	})
 
+	// Group router
+	v1 := router.Group("/v1")
+
 	// Health check endpoint
-	router.GET("/v1/health", app.healthcheckHandler)
+	v1.GET("/health", app.healthcheckHandler)
 
 	// API for items
-	router.POST("/v1/items", app.createItemHandler)
-	router.GET("/v1/items", app.listItemsHandler)
-	router.GET("/v1/items/:id", app.showItemHandler)
-	router.PATCH("/v1/items/:id", app.updateItemHandler)
-	router.DELETE("/v1/items/:id", app.deleteItemHandler)
+	items := v1.Group("/items")
+	items.Use(app.requireActivatedUser())
+	items.POST("/", app.createItemHandler)
+	items.GET("/", app.listItemsHandler)
+	items.GET("/:id", app.showItemHandler)
+	items.PATCH("/:id", app.updateItemHandler)
+	items.DELETE("/:id", app.deleteItemHandler)
 
 	// API for users
 	router.POST("/v1/users", app.registerUserHandler)
