@@ -13,6 +13,7 @@ import (
 )
 
 var ErrDuplicateEmail = errors.New("duplicate email")
+var AnnonymousUser = &User{}
 
 type User struct {
 	ID        int64     `json:"id"`
@@ -31,6 +32,11 @@ type password struct {
 
 type UserModel struct {
 	DB *pgxpool.Pool
+}
+
+// Check if the user is an anonymous user
+func (u *User) IsAnonymous() bool {
+	return u == AnnonymousUser
 }
 
 // Calculates the bcrypt hash of a plaintext password, and stores both the hash

@@ -66,3 +66,15 @@ func (app *app) rateLimitExceededResponse(c *gin.Context) {
 	msg := "rate limit exceeded"
 	app.errorResponse(c, http.StatusTooManyRequests, msg)
 }
+
+// Send a 401 Unauthorized status code and JSON response to client
+func (app *app) invalidCredentialsResponse(c *gin.Context) {
+	msg := "invalid authentication credentials"
+	app.errorResponse(c, http.StatusUnauthorized, msg)
+}
+
+func (app *app) invalidAuthenticationTokenResponse(c *gin.Context) {
+	c.Header("WWW-Authenticate", "Bearer")
+	msg := "invalid or missing authentication token"
+	app.errorResponse(c, http.StatusUnauthorized, msg)
+}

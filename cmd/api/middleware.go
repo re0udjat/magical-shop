@@ -1,12 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/re0udjat/magic-shop/internal/data"
+	"github.com/re0udjat/magic-shop/internal/validator"
 	"golang.org/x/time/rate"
 )
 
@@ -93,6 +97,64 @@ func (app *app) rateLimit() gin.HandlerFunc {
 			// Unlock the mutex so that other goroutines can access the map
 			mu.Unlock()
 		}
+		c.Next()
+	}
+}
+
+func (app *app) authenticate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Add the "Vary: Authorization" header to the response
+		// Indicates to any caches that the response may vary based on the value of the
+		// Authorization header in the request
+		c.Header("Vary", "Authorization")
+
+		// Get value of Authorization header from the request
+		authorizationHeader := c.GetHeader("Authorization")
+
+		// If there is no Authorization header found, add the AnnonymousUser to the request context
+		// Then call the next handler in the chain and return without executing any of the code below
+		if authorizationHeader == "" {
+			c.Request = app.contextSetUser(c.Request, data.AnnonymousUser)
+			c.Next()
+			return
+		}
+
+		headerParts := strings.Split(authorizationHeader, " ")
+		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+			app.invalidAuthenticationTokenResponse(c)
+			c.Abort()
+			return
+		}
+
+		// Extract the token from the header
+		token := headerParts[1]
+
+		// Validate the token
+		v := validator.New()
+
+		if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+			app.invalidAuthenticationTokenResponse(c)
+			c.Abort()
+			return
+		}
+
+		// Retrieve the details of the user associated with the authentication token
+		user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+		if err != nil {
+			switch {
+			case errors.Is(err, data.ErrRecordNotFound):
+				app.invalidAuthenticationTokenResponse(c)
+			default:
+				app.serverErrorResponse(c, err)
+			}
+			c.Abort()
+			return
+		}
+
+		// Add the user to the request context
+		c.Request = app.contextSetUser(c.Request, user)
+
+		// Call the next handler in the chain
 		c.Next()
 	}
 }

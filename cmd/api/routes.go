@@ -15,6 +15,7 @@ func (app *app) routes() http.Handler {
 	router.Use(gin.Logger())
 	router.Use(app.recover())
 	router.Use(app.rateLimit())
+	router.Use(app.authenticate())
 
 	// Customize error response for router
 	router.NoRoute(func(c *gin.Context) {
@@ -37,6 +38,9 @@ func (app *app) routes() http.Handler {
 	// API for users
 	router.POST("/v1/users", app.registerUserHandler)
 	router.PUT("/v1/users/activated", app.activateUserHandler)
+
+	// API for tokens
+	router.POST("/v1/tokens/authentication", app.createAuthenticationTokenHandler)
 
 	return router
 }
