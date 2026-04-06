@@ -36,6 +36,7 @@ func (app *app) routes() http.Handler {
 
 	// API for users
 	router.POST("/v1/users", app.registerUserHandler)
+	router.PUT("/v1/users/activated", app.activateUserHandler)
 
 	return router
 }
