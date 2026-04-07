@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -212,4 +213,29 @@ func (app *app) requirePermission(code string, next gin.HandlerFunc) gin.Handler
 	}
 
 	return app.requireActivatedUser(fn)
+}
+
+func (app *app) enableCORS() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Vary", "Origin")
+
+		origin := c.GetHeader("Origin")
+
+		if origin != "" {
+			for i := range app.config.cors.trustedOrigins {
+				if origin == app.config.cors.trustedOrigins[i] {
+					c.Header("Access-Control-Allow-Origin", origin)
+					if c.Request.Method == http.MethodOptions && c.GetHeader("Access-Control-Request-Method") != "" {
+						c.Header("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE")
+						c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+						c.Writer.WriteHeader(http.StatusOK)
+						c.Abort()
+						return
+					}
+					break
+				}
+			}
+		}
+		c.Next()
+	}
 }

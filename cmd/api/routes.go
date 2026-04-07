@@ -14,6 +14,7 @@ func (app *app) routes() http.Handler {
 	// Add middleware
 	router.Use(gin.Logger()).
 		Use(app.recover()).
+		Use(app.enableCORS()).
 		Use(app.rateLimit()).
 		Use(app.authenticate())
 
