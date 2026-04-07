@@ -13,16 +13,18 @@ var (
 
 // All models will be wrapped inside the Models struct
 type Models struct {
-	Items  ItemModel
-	Users  UserModel
-	Tokens TokenModel
+	Items       ItemModel
+	Users       UserModel
+	Tokens      TokenModel
+	Permissions PermissionModel
 }
 
 // Returns a Model struct containing the initialized ItemModel
 func NewModels(db *pgxpool.Pool) Models {
 	return Models{
-		Items:  ItemModel{DB: db},
-		Users:  UserModel{DB: db},
-		Tokens: TokenModel{DB: db},
+		Items:       ItemModel{DB: db},
+		Users:       UserModel{DB: db},
+		Tokens:      TokenModel{DB: db},
+		Permissions: PermissionModel{DB: db},
 	}
 }

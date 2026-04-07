@@ -57,6 +57,13 @@ func (app *app) registerUserHandler(c *gin.Context) {
 		return
 	}
 
+	// Add the permissions for the user
+	err = app.models.Permissions.AddForUser(user.ID, "items:read")
+	if err != nil {
+		app.serverErrorResponse(c, err)
+		return
+	}
+
 	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
 	if err != nil {
 		app.serverErrorResponse(c, err)

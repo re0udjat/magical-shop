@@ -33,12 +33,11 @@ func (app *app) routes() http.Handler {
 
 	// API for items
 	items := v1.Group("/items")
-	items.Use(app.requireActivatedUser())
-	items.POST("/", app.createItemHandler)
-	items.GET("/", app.listItemsHandler)
-	items.GET("/:id", app.showItemHandler)
-	items.PATCH("/:id", app.updateItemHandler)
-	items.DELETE("/:id", app.deleteItemHandler)
+	items.POST("/", app.requirePermission("items:write", app.createItemHandler))
+	items.GET("/", app.requirePermission("items:read", app.listItemsHandler))
+	items.GET("/:id", app.requirePermission("items:read", app.showItemHandler))
+	items.PATCH("/:id", app.requirePermission("items:write", app.updateItemHandler))
+	items.DELETE("/:id", app.requirePermission("items:write", app.deleteItemHandler))
 
 	// API for users
 	router.POST("/v1/users", app.registerUserHandler)

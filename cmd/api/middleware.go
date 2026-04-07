@@ -173,7 +173,7 @@ func (app *app) requireAuthenticatedUser(next gin.HandlerFunc) gin.HandlerFunc {
 	}
 }
 
-func (app *app) requireActivatedUser() gin.HandlerFunc {
+func (app *app) requireActivatedUser(next gin.HandlerFunc) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		// Get the user from the request context
 		user := app.contextGetUser(c.Request)
@@ -185,8 +185,31 @@ func (app *app) requireActivatedUser() gin.HandlerFunc {
 			return
 		}
 
-		c.Next()
+		next(c)
 	}
 
 	return app.requireAuthenticatedUser(fn)
+}
+
+func (app *app) requirePermission(code string, next gin.HandlerFunc) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		user := app.contextGetUser(c.Request)
+
+		permissions, err := app.models.Permissions.GetAllForUser(user.ID)
+		if err != nil {
+			app.serverErrorResponse(c, err)
+			c.Abort()
+			return
+		}
+
+		if !permissions.Include(code) {
+			app.notPermittedResponse(c)
+			c.Abort()
+			return
+		}
+
+		next(c)
+	}
+
+	return app.requireActivatedUser(fn)
 }
