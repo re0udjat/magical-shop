@@ -2,9 +2,11 @@ package main
 
 import (
 	"errors"
+	"expvar"
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +16,10 @@ import (
 	"github.com/re0udjat/magic-shop/internal/validator"
 	"golang.org/x/time/rate"
 )
+
+type metricsResponseWriter struct {
+	gin.ResponseWriter
+}
 
 func (app *app) recover() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -237,5 +243,47 @@ func (app *app) enableCORS() gin.HandlerFunc {
 			}
 		}
 		c.Next()
+	}
+}
+
+func newMetricsResponseWriter(w gin.ResponseWriter) *metricsResponseWriter {
+	return &metricsResponseWriter{
+		ResponseWriter: w,
+	}
+}
+
+func (app *app) metrics() gin.HandlerFunc {
+	var (
+		totalRequestsReceived           = expvar.NewInt("total_requests_received")
+		totalResponsesSent              = expvar.NewInt("total_responses_sent")
+		totalProcessingTimeMicroseconds = expvar.NewInt("total_processing_time_μs")
+		totalResponsesSentByStatus      = expvar.NewMap("total_responses_sent_by_status")
+	)
+
+	return func(c *gin.Context) {
+		// Record the time that we started to process the request
+		start := time.Now()
+
+		// Increment the number of requests received by 1
+		totalRequestsReceived.Add(1)
+
+		// Create a new metricsResponseWriter, which wraps the original http.ResponseWriter
+		// value that the metrics middleware received
+		writer := newMetricsResponseWriter(c.Writer)
+		c.Writer = writer
+
+		// Call the next handler in the chain
+		c.Next()
+
+		// Increment the number of responses sent by 1
+		totalResponsesSent.Add(1)
+
+		// The response status code should be stored in the mw.statusCode field
+		totalResponsesSentByStatus.Add(strconv.Itoa(c.Writer.Status()), 1)
+
+		// Calculate the number of microseconds since we began to process the request,
+		// then increment the total processing time by this amount
+		duration := time.Since(start).Microseconds()
+		totalProcessingTimeMicroseconds.Add(duration)
 	}
 }

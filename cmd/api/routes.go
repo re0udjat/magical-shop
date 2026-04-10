@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ func (app *app) routes() http.Handler {
 
 	// Add middleware
 	router.Use(gin.Logger()).
+		Use(app.metrics()).
 		Use(app.recover()).
 		Use(app.enableCORS()).
 		Use(app.rateLimit()).
@@ -46,6 +48,9 @@ func (app *app) routes() http.Handler {
 
 	// API for tokens
 	router.POST("/v1/tokens/authentication", app.createAuthenticationTokenHandler)
+
+	// API for metrics
+	router.GET("/debug/vars", gin.WrapH(expvar.Handler()))
 
 	return router
 }

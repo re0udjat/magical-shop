@@ -3,8 +3,8 @@ tmp_dir = "tmp"
 
 [build]
   cmd = "go build -o ./tmp/api ./cmd/api"
-  bin = "tmp/api -limiter-enabled=false -cors-trusted-origins='http://localhost:9000 http://localhost:9001'"
-  full_bin = "./tmp/api -limiter-enabled=false -cors-trusted-origins='http://localhost:9000 http://localhost:9001'"
+  bin = "tmp/api -limiter-enabled=true -cors-trusted-origins='http://localhost:9000 http://localhost:9001'"
+  full_bin = "./tmp/api -limiter-enabled=true -cors-trusted-origins='http://localhost:9000 http://localhost:9001'"
   include_ext = ["go", "tpl", "tmpl", "html", "toml"]
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules"]
   include_dir = []

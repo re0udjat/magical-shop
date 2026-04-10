@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"expvar"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -78,7 +81,14 @@ func main() {
 		return nil
 	})
 
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		os.Exit(0)
+	}
 
 	// Structured logger which writes log entries to stdout stream
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -94,6 +104,25 @@ func main() {
 	// function exits
 	defer dbpool.Close()
 	logger.Info("database connection pool established")
+
+	// Publish a new "version" variable in the expvar handler containing our app version
+	// number (currently the constant "1.0.0")
+	expvar.NewString("version").Set(version)
+
+	// Publish the number of active goroutines
+	expvar.Publish("goroutines", expvar.Func(func() any {
+		return runtime.NumGoroutine()
+	}))
+
+	// Publish the db connection pool statistics
+	expvar.Publish("database", expvar.Func(func() any {
+		return dbpool.Stat()
+	}))
+
+	// Publish the current Unix timestamp
+	expvar.Publish("timestamp", expvar.Func(func() any {
+		return time.Now().Unix()
+	}))
 
 	app := &app{
 		config: cfg,

@@ -99,19 +99,6 @@ func (app *app) readString(qs url.Values, key string, defaultValue string) strin
 	return s
 }
 
-// Reads a string value from the query string and the splits it into a slice on the
-// comma character. If no matching key could be found, it returns the provided default
-// value
-func (app *app) readCSV(qs url.Values, key string, defaultValue []string) []string {
-	csv := qs.Get(key)
-
-	if csv == "" {
-		return defaultValue
-	}
-
-	return strings.Split(csv, ",")
-}
-
 // Reads a string value from the query string and converts it to an integer before
 // returning it. If no matching key could be found, or the value is not a valid
 // integer, it returns the provided default value
