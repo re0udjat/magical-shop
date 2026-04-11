@@ -3,9 +3,11 @@ package main
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pascaldekloe/jwt"
 	"github.com/re0udjat/magic-shop/internal/data"
 	"github.com/re0udjat/magic-shop/internal/validator"
 )
@@ -54,13 +56,22 @@ func (app *app) createAuthenticationTokenHandler(c *gin.Context) {
 		return
 	}
 
-	token, err := app.models.Tokens.New(user.ID, 24*time.Hour, data.ScopeAuthentication)
+	var claims jwt.Claims
+	claims.Subject = strconv.FormatInt(user.ID, 10)
+	claims.Issued = jwt.NewNumericTime(time.Now())
+	claims.NotBefore = jwt.NewNumericTime(time.Now())
+	claims.Expires = jwt.NewNumericTime(time.Now().Add(24 * time.Hour))
+	claims.Issuer = "magical-shop.cuongnlt.com"
+	claims.Audiences = []string{"magical-shop.cuongnlt.com"}
+
+	// Sign the jwt claims using HMAC-SHA256 algorithm and the secret key from the app config
+	jwtBytes, err := claims.HMACSign(jwt.HS256, []byte(app.config.jwt.secret))
 	if err != nil {
 		app.serverErrorResponse(c, err)
 		return
 	}
 
-	app.writeJSON(c, http.StatusOK, envelope{"token": token})
+	app.writeJSON(c, http.StatusOK, envelope{"authentication_token": string(jwtBytes)})
 }
 
 func (app *app) createPasswordResetTokenHandler(c *gin.Context) {

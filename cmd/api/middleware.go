@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pascaldekloe/jwt"
 	"github.com/re0udjat/magic-shop/internal/data"
-	"github.com/re0udjat/magic-shop/internal/validator"
 	"golang.org/x/time/rate"
 )
 
@@ -127,6 +127,9 @@ func (app *app) authenticate() gin.HandlerFunc {
 		}
 
 		headerParts := strings.Split(authorizationHeader, " ")
+		// for _, part := range headerParts {
+		// 	fmt.Println("Part:", part)
+		// }
 		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
 			app.invalidAuthenticationTokenResponse(c)
 			c.Abort()
@@ -136,17 +139,41 @@ func (app *app) authenticate() gin.HandlerFunc {
 		// Extract the token from the header
 		token := headerParts[1]
 
-		// Validate the token
-		v := validator.New()
-
-		if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+		// Parse the JWT and extract the claims
+		claims, err := jwt.HMACCheck([]byte(token), []byte(app.config.jwt.secret))
+		if err != nil {
+			fmt.Println(err)
 			app.invalidAuthenticationTokenResponse(c)
 			c.Abort()
 			return
 		}
 
-		// Retrieve the details of the user associated with the authentication token
-		user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+		if !claims.Valid(time.Now()) {
+			app.invalidAuthenticationTokenResponse(c)
+			c.Abort()
+			return
+		}
+
+		if claims.Issuer != "magical-shop.cuongnlt.com" {
+			app.invalidAuthenticationTokenResponse(c)
+			c.Abort()
+			return
+		}
+
+		if !claims.AcceptAudience("magical-shop.cuongnlt.com") {
+			app.invalidAuthenticationTokenResponse(c)
+			c.Abort()
+			return
+		}
+
+		userID, err := strconv.ParseInt(claims.Subject, 10, 64)
+		if err != nil {
+			app.invalidAuthenticationTokenResponse(c)
+			c.Abort()
+			return
+		}
+
+		user, err := app.models.Users.Get(userID)
 		if err != nil {
 			switch {
 			case errors.Is(err, data.ErrRecordNotFound):
