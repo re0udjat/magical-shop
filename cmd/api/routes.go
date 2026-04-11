@@ -45,9 +45,12 @@ func (app *app) routes() http.Handler {
 	// API for users
 	router.POST("/v1/users", app.registerUserHandler)
 	router.PUT("/v1/users/activated", app.activateUserHandler)
+	router.PUT("/v1/users/password", app.updateUserPasswordHandler)
 
 	// API for tokens
 	router.POST("/v1/tokens/authentication", app.createAuthenticationTokenHandler)
+	router.POST("/v1/tokens/password-reset", app.createPasswordResetTokenHandler)
+	router.POST("/v1/tokens/activation", app.createActivationTokenHandler)
 
 	// API for metrics
 	router.GET("/debug/vars", gin.WrapH(expvar.Handler()))
